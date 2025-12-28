@@ -1,11 +1,11 @@
 import express from "express";
 import fetch from "node-fetch";
-// import { authenticateToken } from "../Middlewares/authMiddleware.js";
+import { authenticateToken } from "../Middlewares/authMiddleware.js";
 
 const router = express.Router();
 
 // Protect endpoints if needed
-// router.use(authenticateToken);
+router.use(authenticateToken);
 
 router.post("/next-question", async (req, res) => {
   const {
