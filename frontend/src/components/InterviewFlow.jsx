@@ -226,9 +226,10 @@ export default function InterviewFlow({
       setGeneratingFeedback(true);
 
       setTimeout(() => {
+        const randomScore = Math.floor(Math.random() * (40 - 20 + 1)) + 20;
         setFeedback({
-          score: 82,
-          summary: "Good technical fundamentals.",
+          score: randomScore,
+          summary: "Thank you for participating in the interview.",
           details: "AI feedback engine coming soon.",
         });
         setGeneratingFeedback(false);

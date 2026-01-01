@@ -5,6 +5,7 @@ import AuthContext from "../context/AuthContext"
 import InterviewSetup from "../components/InterviewSetup.jsx"
 import InterviewHistory from "../components/InterviewHistory"
 import Dashboard from "../components/Dashboard"
+import About from "../components/About"
 import ProfileModal from "../components/ProfileModal"
 import styles from "./Home.module.css"
 
@@ -70,8 +71,8 @@ export default function Home() {
 
             {/* ABOUT */}
             <button
-              onClick={() => alert("About section coming soon!")}
-              className={styles.navItem}
+              onClick={() => setCurrentPage("about")}
+              className={`${styles.navItem} ${currentPage === "about" ? styles.active : ""}`}
             >
               About Us
             </button>
@@ -144,6 +145,9 @@ export default function Home() {
 
           {/* HISTORY */}
           {currentPage === "history" && <InterviewHistory />}
+
+          {/* ABOUT */}
+          {currentPage === "about" && <About />}
 
           {/* INTERVIEW SETUP */}
           {currentPage === "interview" && (
