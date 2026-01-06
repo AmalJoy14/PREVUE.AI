@@ -62,6 +62,12 @@ const interviewResultSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // AI Generated Feedback Summary
+    feedbackSummary: {
+        pros: [String],
+        cons: [String],
+        improvementPlan: String
+    },
     createdAt: {
         type: Date,
         default: Date.now

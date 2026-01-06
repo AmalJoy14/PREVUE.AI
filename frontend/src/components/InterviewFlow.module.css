@@ -262,66 +262,347 @@
   height: 48px;
 }
 
-/* ================= FEEDBACK ================= */
+/* ================= FEEDBACK MODE ================= */
+.feedbackMode {
+  padding: 0 !important; /* Remove container padding */
+  background: #ffffff !important; /* Force White Background */
+  background-image: none !important; /* Remove any gradients */
+  overflow: hidden !important; /* Let card scroll */
+}
+
 .feedbackCard {
+  background: #ffffff;
+  width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-  border-radius: 32px;
-  padding: 60px 40px;
-  color: white;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 60px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  animation: fadeIn 0.4s ease-out;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Custom Scrollbar */
+.feedbackCard::-webkit-scrollbar {
+  width: 8px;
+}
+
+.feedbackCard::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.feedbackCard::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.feedbackCard::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================= ANALYZING STATE ================= */
+.analyzingState {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
-  border: 1px solid rgba(25, 120, 169, 0.2);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 60px 0;
+  text-align: center;
 }
 
-.feedbackCard h2 {
-  font-size: 56px;
+.analyzingState h2 {
+  margin-top: 24px;
+  margin-bottom: 8px;
+  color: #1e293b;
+  font-size: 24px;
+}
+
+.analyzingState p {
+  color: #64748b;
+  max-width: 400px;
+}
+
+/* ================= FEEDBACK HEADER ================= */
+.feedbackHeader {
+  width: 100%;
+  max-width: 800px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 24px;
+}
+
+.trophyIcon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #fbbf24, #d97706);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2);
+}
+
+.feedbackHeader h2 {
+  font-size: 28px;
   font-weight: 800;
-  margin: 0;
-  background: linear-gradient(135deg, #1978A9, #60d5ff);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 12px;
+  color: #0f172a;
+  margin: 0 0 6px 0;
 }
 
-.feedbackCard > p:first-of-type {
-  font-size: 20px;
+.feedbackHeader p {
+  color: #64748b;
+  margin: 0;
+  font-size: 16px;
+}
+
+/* ================= SCORE SECTION (CIRCULAR) ================= */
+.scoreSection {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 40px;
+}
+
+.mainScore {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scoreTextOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.scoreValueText {
+  font-size: 42px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.scoreLabelText {
+  font-size: 13px;
   font-weight: 600;
-  color: #e2e8f0;
-  text-align: center;
-  margin: 0;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
 }
 
-.feedbackCard .muted {
-  color: var(--muted);
-  font-size: 15px;
-  text-align: center;
+.circularChart {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circleBg {
+  fill: none;
+  stroke: #e2e8f0; /* Darker grey for visibility on white */
+  stroke-width: 2.5;
+}
+
+.circle {
+  fill: none;
+  stroke: #0f172a; 
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1s ease-out;
+}
+
+/* ================= METRICS GRID ================= */
+.metricsGrid {
+  width: 100%;
+  max-width: 800px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr); /* 2x2 Layout */
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+@media (max-width: 768px) {
+  .metricsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metricCard {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.metricCard:hover {
+  transform: translateY(-4px);
+  border-color: #e2e8f0;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.metricHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
 }
 
-.feedbackCard button {
-  margin-top: 24px;
-  background: linear-gradient(135deg, #1978A9, #155a8a);
-  padding: 14px 36px;
-  border-radius: 16px;
-  border: none;
-  color: white;
-  font-weight: 700;
-  font-size: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(25, 120, 169, 0.3);
+.iconBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.feedbackCard button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(25, 120, 169, 0.4);
+.metricHeader span {
+  font-weight: 600;
+  color: #475569;
+  font-size: 15px;
 }
+
+.metricValue {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 12px;
+}
+
+.metricBar {
+  width: 100%;
+  height: 8px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.metricFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease-out;
+}
+
+/* ================= QUALITATIVE FEEDBACK ================= */
+.qualitativeSection {
+  width: 100%;
+  max-width: 800px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.feedbackColumn {
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 16px;
+}
+
+.columnHeader h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.feedbackList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feedbackList li {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #475569;
+}
+
+.feedbackList li::before {
+  content: "•";
+  position: absolute;
+  left: 6px;
+  color: #94a3b8;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .qualitativeSection {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ================= ACTION ================= */
+.finishButton {
+  background: #0f172a;
+  color: white;
+  width: 100%;
+  max-width: 800px;
+  padding: 18px;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.finishButton:hover {
+  background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.15);
+}
+
 
 /* ================= ANIMATIONS ================= */
 @keyframes micPulse {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Loader2, MessageSquare } from "lucide-react";
+import { Loader2, MessageSquare, Trophy, CheckCircle, Zap, Briefcase, Layout, ArrowRight, TrendingUp, AlertCircle } from "lucide-react";
 import CameraFeed from "./CameraFeed";
 import QuestionCard from "./QuestionCard";
 import styles from "./InterviewFlow.module.css";
@@ -44,6 +44,8 @@ export default function InterviewFlow({
 
   const recorderRef = useRef(null);
   const chunksRef = useRef([]);
+  
+  const interviewCreatedRef = useRef(false);
 
   /* ================= PAGE LOCK ================= */
   useEffect(() => {
@@ -96,6 +98,10 @@ export default function InterviewFlow({
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
+    // Prevent double creation in React StrictMode
+    if (interviewCreatedRef.current) return;
+    interviewCreatedRef.current = true;
+
     const createInterview = async () => {
       try {
         const res = await axios.post(
@@ -253,16 +259,43 @@ export default function InterviewFlow({
       stopCamera();
       setGeneratingFeedback(true);
 
-      // Simulate AI feedback (can be replaced with real evaluation aggregation)
-      setTimeout(() => {
-        const randomScore = Math.floor(Math.random() * (40 - 20 + 1)) + 20;
-        setFeedback({
-          score: randomScore,
-          summary: "Thank you for participating in the interview.",
-          details: "AI feedback engine coming soon.",
-        });
-        setGeneratingFeedback(false);
-      }, 1200);
+      // Fetch actual results from database
+      (async () => {
+        try {
+          // Give evaluation some time to complete
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
+          const res = await axios.post(
+            `${API_BASE}/api/questions/finalize-interview`,
+            { 
+              interviewId,
+              eyeContact: 0,
+              confidence: 0,
+              engagement: 0
+            },
+            { withCredentials: true }
+          );
+
+          const results = res.data?.results;
+          const totalScore = results?.totalScore || 0;
+          
+          setFeedback({
+            score: Math.round(totalScore * 10), // Convert to percentage (out of 100)
+            summary: `Interview completed! Your overall performance score is ${totalScore}/10.`,
+            details: `Correctness: ${results?.correctness || 0}/10 | Depth: ${results?.depth || 0}/10 | Practical Experience: ${results?.practicalExperience || 0}/10 | Structure: ${results?.structure || 0}/10`,
+            results
+          });
+        } catch (err) {
+          console.error("Failed to fetch results:", err);
+          setFeedback({
+            score: 0,
+            summary: "Interview completed!",
+            details: "Unable to load results at this time.",
+          });
+        } finally {
+          setGeneratingFeedback(false);
+        }
+      })();
       return;
     }
 
@@ -296,19 +329,150 @@ export default function InterviewFlow({
   /* ================= FEEDBACK ================= */
   if (interviewComplete) {
     return (
-      <div className={styles.container}>
+      <div className={`${styles.container} ${styles.feedbackMode}`}>
         <div className={styles.feedbackCard}>
           {generatingFeedback ? (
-            <>
+            <div className={styles.analyzingState}>
               <Loader2 className={styles.spinner} />
-              Analyzing…
-            </>
+              <h2>Analying Interview...</h2>
+              <p>Generative AI is evaluating your responses against industry standards.</p>
+            </div>
           ) : (
             <>
-              <h2>Score: {feedback.score}%</h2>
-              <p>{feedback.summary}</p>
-              <p className={styles.muted}>{feedback.details}</p>
-              <button onClick={onBack}>Back</button>
+              <div className={styles.feedbackHeader}>
+                <div className={styles.trophyIcon}>
+                  <Trophy size={32} />
+                </div>
+                <div>
+                  <h2>Interview Analysis</h2>
+                  <p>Great job completing the {mode} session!</p>
+                </div>
+              </div>
+
+              <div className={styles.scoreSection}>
+                <div className={styles.mainScore}>
+                  <div className={styles.scoreTextOverlay}>
+                    <span className={styles.scoreValueText}>{feedback.score}%</span>
+                    <span className={styles.scoreLabelText}>Total Score</span>
+                  </div>
+                  <svg viewBox="0 0 36 36" className={styles.circularChart}>
+                    <path className={styles.circleBg}
+                      d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                    <path className={styles.circle}
+                      strokeDasharray={`${feedback.score}, 100`}
+                      d="M18 2.0845
+                        a 15.9155 15.9155 0 0 1 0 31.831
+                        a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
+                  </svg>
+                </div>
+              </div>
+
+              <div className={styles.metricsGrid}>
+                {/* Correctness */}
+                <div className={styles.metricCard}>
+                  <div className={styles.metricHeader}>
+                    <div className={styles.iconBox} style={{background: 'rgba(16, 185, 129, 0.1)', color: '#10b981'}}>
+                      <CheckCircle size={18} />
+                    </div>
+                    <span>Correctness</span>
+                  </div>
+                  <div className={styles.metricValue}>
+                    {Math.round((feedback.results?.correctness || 0) * 10)}%
+                  </div>
+                  <div className={styles.metricBar}>
+                    <div className={styles.metricFill} style={{width: `${(feedback.results?.correctness || 0) * 10}%`, backgroundColor: '#10b981'}}></div>
+                  </div>
+                </div>
+
+                {/* Depth */}
+                <div className={styles.metricCard}>
+                  <div className={styles.metricHeader}>
+                    <div className={styles.iconBox} style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6'}}>
+                      <Zap size={18} />
+                    </div>
+                    <span>Depth</span>
+                  </div>
+                  <div className={styles.metricValue}>
+                    {Math.round((feedback.results?.depth || 0) * 10)}%
+                  </div>
+                  <div className={styles.metricBar}>
+                    <div className={styles.metricFill} style={{width: `${(feedback.results?.depth || 0) * 10}%`, backgroundColor: '#3b82f6'}}></div>
+                  </div>
+                </div>
+
+                {/* Practical Experience */}
+                <div className={styles.metricCard}>
+                  <div className={styles.metricHeader}>
+                    <div className={styles.iconBox} style={{background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b'}}>
+                      <Briefcase size={18} />
+                    </div>
+                    <span>Experience</span>
+                  </div>
+                  <div className={styles.metricValue}>
+                    {Math.round((feedback.results?.practicalExperience || 0) * 10)}%
+                  </div>
+                  <div className={styles.metricBar}>
+                    <div className={styles.metricFill} style={{width: `${(feedback.results?.practicalExperience || 0) * 10}%`, backgroundColor: '#f59e0b'}}></div>
+                  </div>
+                </div>
+
+                {/* Structure */}
+                <div className={styles.metricCard}>
+                  <div className={styles.metricHeader}>
+                    <div className={styles.iconBox} style={{background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6'}}>
+                      <Layout size={18} />
+                    </div>
+                    <span>Structure</span>
+                  </div>
+                  <div className={styles.metricValue}>
+                    {Math.round((feedback.results?.structure || 0) * 10)}%
+                  </div>
+                  <div className={styles.metricBar}>
+                    <div className={styles.metricFill} style={{width: `${(feedback.results?.structure || 0) * 10}%`, backgroundColor: '#8b5cf6'}}></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Qualitative Feedback Section */}
+              {feedback.results?.feedbackSummary && (
+                <div className={styles.qualitativeSection}>
+                  <div className={styles.feedbackColumn}>
+                    <div className={styles.columnHeader}>
+                      <div className={styles.iconBox} style={{background: 'rgba(16, 185, 129, 0.1)', color: '#10b981'}}>
+                        <TrendingUp size={20} />
+                      </div>
+                      <h3>Key Strengths</h3>
+                    </div>
+                    <ul className={styles.feedbackList}>
+                      {feedback.results.feedbackSummary.pros?.map((pro, i) => (
+                        <li key={i}>{pro}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className={styles.feedbackColumn}>
+                    <div className={styles.columnHeader}>
+                      <div className={styles.iconBox} style={{background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444'}}>
+                        <AlertCircle size={20} />
+                      </div>
+                      <h3>Areas for Improvement</h3>
+                    </div>
+                    <ul className={styles.feedbackList}>
+                      {feedback.results.feedbackSummary.cons?.map((con, i) => (
+                        <li key={i}>{con}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+
+              <button onClick={onBack} className={styles.finishButton}>
+                Return to Dashboard <ArrowRight size={18} />
+              </button>
             </>
           )}
         </div>

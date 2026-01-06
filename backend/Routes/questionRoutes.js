@@ -312,11 +312,34 @@ Respond in JSON format:
           interviewResult.questions.push(questionData);
         }
 
+        // Calculate and update overall averages after each question
+        const questions = interviewResult.questions;
+        if (questions.length > 0) {
+          const avgCorrectness = questions.reduce((sum, q) => sum + (q.correctness || 0), 0) / questions.length;
+          const avgDepth = questions.reduce((sum, q) => sum + (q.depth || 0), 0) / questions.length;
+          const avgPracticalExperience = questions.reduce((sum, q) => sum + (q.practicalExperience || 0), 0) / questions.length;
+          const avgStructure = questions.reduce((sum, q) => sum + (q.structure || 0), 0) / questions.length;
+
+          interviewResult.overallCorrectness = Math.round(avgCorrectness * 10) / 10;
+          interviewResult.overallDepth = Math.round(avgDepth * 10) / 10;
+          interviewResult.overallPracticalExperience = Math.round(avgPracticalExperience * 10) / 10;
+          interviewResult.overallStructure = Math.round(avgStructure * 10) / 10;
+
+          // Update total score (only interview metrics, excluding camera-based scores for now)
+          interviewResult.totalScore = Math.round(
+            ((interviewResult.overallCorrectness +
+              interviewResult.overallDepth +
+              interviewResult.overallPracticalExperience +
+              interviewResult.overallStructure) / 4) * 10
+          ) / 10;
+        }
+
         await interviewResult.save();
 
         console.log(
           `Evaluation saved for user ${userId}, Interview ${interviewResult._id}, Q${questionNumber}:`,
-          result
+          result,
+          `| Overall averages updated - Correctness: ${interviewResult.overallCorrectness}, Depth: ${interviewResult.overallDepth}, Practical: ${interviewResult.overallPracticalExperience}, Structure: ${interviewResult.overallStructure}, Total: ${interviewResult.totalScore}`
         );
       } catch (dbError) {
         console.error("Database save error:", dbError);
@@ -369,16 +392,77 @@ router.post("/finalize-interview", async (req, res) => {
     interviewResult.confidence = confidence || 0;
     interviewResult.engagement = engagement || 0;
 
-    // Calculate total score (average of all 7 metrics)
+    // Calculate total score (average of 4 metrics, excluding camera metrics for now)
     interviewResult.totalScore = Math.round(
       ((interviewResult.overallCorrectness +
         interviewResult.overallDepth +
         interviewResult.overallPracticalExperience +
-        interviewResult.overallStructure +
-        interviewResult.eyeContact +
-        interviewResult.confidence +
-        interviewResult.engagement) / 7) * 10
+        interviewResult.overallStructure) / 4) * 10
     ) / 10;
+
+    // --- Generate Qualitative Feedback (Pros/Cons) ---
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (apiKey && questions.length > 0) {
+        const interviewLog = questions
+          .map(q => `Q: ${q.question}\nA: ${q.answer}\nScore: ${q.correctness}/10`)
+          .join("\n\n");
+
+        const summaryPrompt = `
+You are an expert interview coach. Analyze this interview session and provide a summary.
+
+Role: ${interviewResult.role}
+Level: ${interviewResult.difficulty}
+
+Interview Log:
+${interviewLog}
+
+Task:
+1. Identify 3 strong points (Pros) where the candidate performed well.
+2. Identify 3 areas for improvement (Cons - specifically what they lacked or got wrong).
+3. Provide a 1-sentence strategic advice (Improvement Plan).
+
+Return ONLY valid JSON in this format:
+{
+  "pros": ["string", "string", "string"],
+  "cons": ["string", "string", "string"],
+  "improvementPlan": "string"
+}
+`;
+
+        const summaryResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: summaryPrompt }] }],
+            }),
+          }
+        );
+
+        const summaryData = await summaryResp.json();
+        const summaryText = summaryData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+
+        if (summaryText) {
+          let jsonText = summaryText;
+            const jsonMatch = summaryText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+            if (jsonMatch && jsonMatch[1]) {
+              jsonText = jsonMatch[1].trim();
+            }
+          const parsedSummary = JSON.parse(jsonText);
+          
+          interviewResult.feedbackSummary = {
+            pros: parsedSummary.pros || [],
+            cons: parsedSummary.cons || [],
+            improvementPlan: parsedSummary.improvementPlan || ""
+          };
+        }
+      }
+    } catch (aiErr) {
+      console.error("AI Summary Generation Failed:", aiErr);
+      // Don't fail the request, just continue without AI summary
+    }
 
     await interviewResult.save();
 
@@ -392,7 +476,8 @@ router.post("/finalize-interview", async (req, res) => {
         eyeContact: interviewResult.eyeContact,
         confidence: interviewResult.confidence,
         engagement: interviewResult.engagement,
-        totalScore: interviewResult.totalScore
+        totalScore: interviewResult.totalScore,
+        feedbackSummary: interviewResult.feedbackSummary // Include this in response
       }
     });
   } catch (err) {
