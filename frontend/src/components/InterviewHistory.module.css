@@ -1,121 +1,278 @@
 .container {
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.header {
+  margin-bottom: 32px;
 }
 
 .title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 24px;
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 8px;
 }
 
+.subtitle {
+  color: #64748b;
+  font-size: 16px;
+}
+
+/* ================= STATS GRID ================= */
 .statsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
 }
 
 .statCard {
   background: white;
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+  transition: transform 0.2s;
+}
+
+.statCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+}
+
+.iconWrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .statLabel {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
-  color: #999;
+  color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .statValue {
-  font-size: 32px;
+  font-size: 24px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* ================= HISTORY ================= */
+.sectionTitle {
+  font-size: 20px;
   font-weight: 700;
-  color: #1978A9;
+  color: #0f172a;
+  margin-bottom: 24px;
 }
 
-.empty {
+.tableCard {
   background: white;
-  border-radius: 8px;
-  padding: 40px;
-  text-align: center;
-  color: #999;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
 }
 
-.historyList {
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th {
+  text-align: left;
+  padding: 18px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.table td {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover {
+  background: #f8fafc;
+}
+
+/* Cell Styles */
+.roleCell {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 4px;
 }
 
-.historyItem {
-  background: white;
-  border-radius: 8px;
-  padding: 16px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.2s;
-}
-
-.historyItem:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.itemContent {
-  flex: 1;
-}
-
-.itemHeader {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.itemRole {
-  font-size: 16px;
+.roleName {
   font-weight: 600;
-  color: #333;
-  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
 }
 
-.itemMode {
-  font-size: 12px;
-  background-color: #f0f0f0;
-  color: #666;
-  padding: 4px 8px;
+.modeBadge {
+  display: inline-block;
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 2px 6px;
   border-radius: 4px;
+  width: fit-content;
 }
 
-.itemDifficulty {
+.dateCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.difficultyBadge {
   font-size: 12px;
-  background-color: #f0f0f0;
-  color: #666;
-  padding: 4px 8px;
-  border-radius: 4px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
 }
 
-.itemDate {
+.difficultyBadge.easy {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.difficultyBadge.medium {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.difficultyBadge.hard {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.scoreText {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.statusCompleted {
+  display: inline-flex;
+  align-items: center;
   font-size: 12px;
-  color: #999;
-  margin: 0;
+  font-weight: 600;
+  color: #16a34a;
+  background: #dcfce7;
+  padding: 4px 12px;
+  border-radius: 20px;
 }
 
-.itemScore {
-  font-size: 24px;
-  font-weight: 700;
-  border: 2px solid;
-  width: 60px;
-  height: 60px;
+/* ================= LOADER & EMPTY ================= */
+.loaderContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  color: #64748b;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px;
+  background: white;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+}
+
+.emptyIcon {
+  width: 80px;
+  height: 80px;
+  background: #f1f5f9;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0 auto 20px;
+  color: #94a3b8;
+}
+
+.emptyState h3 {
+  font-size: 18px;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.emptyState p {
+  color: #64748b;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .table thead {
+    display: none;
+  }
+  
+  .table, .table tbody, .table tr, .table td {
+    display: block;
+    width: 100%;
+  }
+  
+  .table tr {
+    margin-bottom: 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  
+  .table td {
+    padding: 8px 0;
+    border: none;
+    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 }

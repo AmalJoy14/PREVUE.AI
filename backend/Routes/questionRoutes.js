@@ -486,4 +486,24 @@ Return ONLY valid JSON in this format:
   }
 });
 
+/* ================= GET USER INTERVIEWS ================= */
+router.get("/user-interviews", async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+
+  if (!userId) {
+    return res.status(401).json({ error: "User not authenticated" });
+  }
+
+  try {
+    const interviews = await InterviewResult.find({ userId })
+      .select("role mode difficulty totalScore feedbackSummary createdAt")
+      .sort({ createdAt: -1 });
+
+    return res.json({ interviews });
+  } catch (err) {
+    console.error("Fetch interviews error:", err);
+    return res.status(500).json({ error: "Failed to fetch interview history" });
+  }
+});
+
 export default router;
