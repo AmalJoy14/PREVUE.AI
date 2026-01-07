@@ -65,6 +65,12 @@ export default function Dashboard() {
     { skill: 'Structure', score: latestSkills.structure }
   ] : []
 
+  // Normalize difficulty performance to percentage scale for charting
+  const performanceByDifficultyData = (analytics.performanceByDifficulty || []).map(item => ({
+    ...item,
+    averageScore: Math.min(100, Math.round((item.averageScore || 0) * 10))
+  }))
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -119,7 +125,7 @@ export default function Dashboard() {
             <LineChart data={analytics.skillTrends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="interview" stroke="#64748b" />
-              <YAxis stroke="#64748b" />
+              <YAxis stroke="#64748b" domain={[0, 100]} />
               <Tooltip 
                 contentStyle={{background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}
               />
@@ -139,10 +145,10 @@ export default function Dashboard() {
             <h3>Performance by Difficulty</h3>
           </div>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={analytics.performanceByDifficulty}>
+            <BarChart data={performanceByDifficultyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="difficulty" stroke="#64748b" />
-              <YAxis stroke="#64748b" />
+              <YAxis stroke="#64748b" domain={[0, 100]} />
               <Tooltip 
                 contentStyle={{background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}
               />
@@ -164,7 +170,7 @@ export default function Dashboard() {
               <RadarChart data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="skill" stroke="#64748b" />
-                <PolarRadiusAxis stroke="#64748b" domain={[0, 10]} />
+              <PolarRadiusAxis stroke="#64748b" domain={[0, 100]} />
                 <Radar name="Your Skills" dataKey="score" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
                 <Tooltip 
                   contentStyle={{background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}
