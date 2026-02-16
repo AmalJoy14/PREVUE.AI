@@ -28,11 +28,10 @@
 ================================ */
 
 .modal {
-  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-  width: 480px;
+  background: #ffffff;
+  width: 440px;
   max-width: 92%;
   border-radius: 20px;
-  padding: 0;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25), 0 10px 30px rgba(102, 126, 234, 0.15);
   animation: popup 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   overflow: hidden;
@@ -97,24 +96,27 @@
 }
 
 /* ================================
-   AVATAR SECTION
+   CONTENT
 ================================ */
 
-.avatarSection {
-  display: flex;
-  gap: 24px;
-  align-items: center;
-  padding: 32px 28px;
-  background: #ffffff;
+.content {
+  padding: 40px 32px 32px;
 }
 
-.avatarWrapper {
+/* ================================
+   AVATAR
+================================ */
+
+.avatarContainer {
   position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 32px;
 }
 
 .avatarPreview {
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   object-fit: cover;
   border: 4px solid #1978A9;
@@ -123,14 +125,13 @@
 }
 
 .avatarPreview:hover {
-  transform: scale(1.05);
-  box-shadow: 0 12px 32px rgba(25, 120, 169, 0.4);
+  transform: scale(1.02);
 }
 
 .avatarBadge {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
+  top: 0;
+  right: 0;
   background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: white;
   font-size: 11px;
@@ -147,75 +148,32 @@
   50% { transform: translateY(-8px); }
 }
 
-.avatarControls {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-/* ================================
-   BUTTONS
-================================ */
-
-.fileBtn {
+.editBtn {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #1978A9 0%, #1562a0 100%);
-  border: none;
-  padding: 12px 20px;
-  font-size: 14px;
-  border-radius: 12px;
+  border: 3px solid white;
   cursor: pointer;
-  font-weight: 600;
-  color: white;
-  transition: all 0.3s;
-  box-shadow: 0 4px 12px rgba(25, 120, 169, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  color: white;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(25, 120, 169, 0.4);
 }
 
-.fileBtn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(25, 120, 169, 0.4);
+.editBtn:hover:not(:disabled) {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(25, 120, 169, 0.5);
 }
 
-.fileBtn:disabled {
+.editBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.uploadIcon {
-  font-size: 18px;
-}
-
-.removeBtn {
-  border: none;
-  background: none;
-  color: #dc2626;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 6px;
-  transition: all 0.2s;
-  text-align: left;
-}
-
-.removeBtn:hover:not(:disabled) {
-  color: #991b1b;
-  transform: translateX(4px);
-}
-
-.removeBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.fileHint {
-  font-size: 12px;
-  color: #6b7280;
-  margin: 4px 0 0 0;
-  font-weight: 500;
 }
 
 /* ================================
@@ -232,7 +190,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 28px 20px;
+  margin-bottom: 24px;
   border: 1px solid #fecaca;
   animation: shake 0.4s ease-out;
 }
@@ -248,49 +206,37 @@
 }
 
 /* ================================
-   INPUT FIELDS
+   INFO SECTION
 ================================ */
 
-.label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 28px 24px;
-  color: #374151;
-  position: relative;
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.input {
-  width: 100%;
+.infoField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.infoValue {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1f2937;
   padding: 14px 16px;
+  background: #f9fafb;
   border-radius: 12px;
   border: 2px solid #e5e7eb;
-  font-size: 15px;
-  margin-top: 8px;
-  transition: all 0.2s;
-  background: #ffffff;
-}
-
-.input:focus {
-  outline: none;
-  border-color: #1978A9;
-  box-shadow: 0 0 0 4px rgba(25, 120, 169, 0.1);
-  transform: translateY(-1px);
-}
-
-.input:disabled {
-  background: #f9fafb;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.charCount {
-  position: absolute;
-  right: 0;
-  top: 0;
-  font-size: 11px;
-  color: #9ca3af;
-  font-weight: 500;
 }
 
 /* ================================
@@ -392,27 +338,18 @@
     font-size: 20px;
   }
 
-  .avatarSection {
-    padding: 24px 24px;
-    flex-direction: column;
-    text-align: center;
+  .content {
+    padding: 32px 24px 24px;
   }
 
-  .avatarPreview {
-    width: 90px;
-    height: 90px;
+  .avatarContainer {
+    width: 100px;
+    height: 100px;
   }
 
-  .avatarControls {
-    width: 100%;
-  }
-
-  .label {
-    margin: 0 24px 20px;
-  }
-
-  .errorMessage {
-    margin: 0 24px 16px;
+  .editBtn {
+    width: 32px;
+    height: 32px;
   }
 
   .actions {

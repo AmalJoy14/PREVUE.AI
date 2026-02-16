@@ -45,19 +45,12 @@ export default function Home() {
         
         // Update with the server-returned image URL
         const updatedData = {
-          name: newData.name,
           avatar: `http://localhost:3000${data.profileImage}`,
         }
         
         setUser((prev) => ({ ...prev, ...updatedData }))
         if (typeof updateUser === "function") {
           updateUser(updatedData)
-        }
-      } else {
-        // No new file, just update the name
-        setUser((prev) => ({ ...prev, name: newData.name }))
-        if (typeof updateUser === "function") {
-          updateUser({ name: newData.name })
         }
       }
 
@@ -119,12 +112,12 @@ export default function Home() {
               onClick={() => setProfileOpen(true)}
             >
               <img
-                src={user?.avatar || "/images/placeholder-avatar.png"}
+                src={user?.avatar || "http://localhost:3000/uploads/profile-images/noProfileImage.png"}
                 alt="avatar"
                 className={styles.avatar}
                 onError={(e) => {
                   e.currentTarget.onerror = null
-                  e.currentTarget.src = "/placeholder-avatar.png"
+                  e.currentTarget.src = "http://localhost:3000/uploads/profile-images/noProfileImage.png"
                 }}
               />
             </button>
@@ -196,6 +189,7 @@ export default function Home() {
         <ProfileModal
           key="profile-modal"
           initialName={user?.name ?? ""}
+          initialEmail={user?.email ?? ""}
           initialAvatar={user?.avatar ?? null}
           onClose={() => setProfileOpen(false)}
           onSave={handleSaveProfile}
