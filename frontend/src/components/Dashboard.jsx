@@ -9,6 +9,7 @@ const API_BASE = (typeof import.meta !== "undefined" && import.meta.env?.VITE_AP
 export default function Dashboard() {
   const [analytics, setAnalytics] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [chartView, setChartView] = useState('technical')
 
   useEffect(() => {
     fetchAnalytics()
@@ -63,18 +64,22 @@ export default function Dashboard() {
     const totals = analytics.skillTrends.reduce((acc, trend) => {
       acc.correctness += trend.correctness
       acc.depth += trend.depth
-      acc.practical += trend.practical
       acc.structure += trend.structure
+      acc.eyeContact += trend.eyeContact
+      acc.confidence += trend.confidence
+      acc.stability += trend.stability
       return acc
-    }, { correctness: 0, depth: 0, practical: 0, structure: 0 })
+    }, { correctness: 0, depth: 0, structure: 0, eyeContact: 0, confidence: 0, stability: 0 })
     
     const count = analytics.skillTrends.length
     
     return [
       { skill: 'Correctness', score: Math.round(totals.correctness / count) },
       { skill: 'Depth', score: Math.round(totals.depth / count) },
-      { skill: 'Practical', score: Math.round(totals.practical / count) },
-      { skill: 'Structure', score: Math.round(totals.structure / count) }
+      { skill: 'Structure', score: Math.round(totals.structure / count) },
+      { skill: 'Eye Contact', score: Math.round(totals.eyeContact / count) },
+      { skill: 'Confidence', score: Math.round(totals.confidence / count) },
+      { skill: 'Stability', score: Math.round(totals.stability / count) }
     ]
   }
   
@@ -130,12 +135,50 @@ export default function Dashboard() {
 
       {/* Charts Section */}
       <div className={styles.chartsGrid}>
-        {/* Skill Trends Line Chart */}
         <div className={styles.chartCard}>
-          <div className={styles.chartHeader}>
-            <Activity size={20} />
-            <h3>Skill Progression Over Time</h3>
+          <div className={styles.chartHeader} style={{justifyContent: 'space-between'}}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+              <Activity size={20} />
+              <h3>{chartView === 'technical' ? '📊 Technical Performance' : '👉 Behavioural Analysis'}</h3>
+            </div>
+            
+            {/* Toggle Button */}
+            <div style={{display: 'flex', gap: '8px', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '8px'}}>
+              <button 
+                onClick={() => setChartView('technical')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: chartView === 'technical' ? '#3b82f6' : 'transparent',
+                  color: chartView === 'technical' ? 'white' : '#64748b',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Technical
+              </button>
+              <button 
+                onClick={() => setChartView('behavioral')}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: chartView === 'behavioral' ? '#3b82f6' : 'transparent',
+                  color: chartView === 'behavioral' ? 'white' : '#64748b',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Behavioral
+              </button>
+            </div>
           </div>
+
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={analytics.skillTrends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -145,15 +188,28 @@ export default function Dashboard() {
                 contentStyle={{background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}
               />
               <Legend />
-              <Line type="monotone" dataKey="correctness" stroke="#10b981" strokeWidth={2} name="Correctness" />
-              <Line type="monotone" dataKey="depth" stroke="#3b82f6" strokeWidth={2} name="Depth" />
-              <Line type="monotone" dataKey="practical" stroke="#f59e0b" strokeWidth={2} name="Practical" />
-              <Line type="monotone" dataKey="structure" stroke="#8b5cf6" strokeWidth={2} name="Structure" />
+              {chartView === 'technical' ? (
+                <>
+                  <Line type="monotone" dataKey="correctness" stroke="#10b981" strokeWidth={2} name="Correctness" />
+                  <Line type="monotone" dataKey="depth" stroke="#3b82f6" strokeWidth={2} name="Depth" />
+                  <Line type="monotone" dataKey="structure" stroke="#8b5cf6" strokeWidth={2} name="Structure" />
+                </>
+              ) : (
+                <>
+                  <Line type="monotone" dataKey="confidence" stroke="#ec4899" strokeWidth={2} name="Confidence" />
+                  <Line type="monotone" dataKey="eyeContact" stroke="#6366f1" strokeWidth={2} name="Eye Contact" />
+                  <Line type="monotone" dataKey="stability" stroke="#22c55e" strokeWidth={2} name="Stability" />
+                </>
+              )}
             </LineChart>
           </ResponsiveContainer>
+
+          {chartView === 'technical' && (
+            <p style={{fontSize: '13px', color: '#64748b', marginTop: '12px', textAlign: 'center'}}>Shows subject knowledge progression.</p>
+          )}
         </div>
 
-        {/* Performance by Difficulty Bar Chart */}
+        {/* Performance by Difficulty Chart */}
         <div className={styles.chartCard}>
           <div className={styles.chartHeader}>
             <BarChart2 size={20} />
@@ -172,6 +228,8 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Skill Assessment Radar Chart */}
 
       {/* Current Skills Radar Chart */}
       {radarData.length > 0 && (
