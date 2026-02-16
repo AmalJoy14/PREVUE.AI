@@ -37,6 +37,7 @@ export default function InterviewFlow({
   const [interviewComplete, setInterviewComplete] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
+  const [fullscreenWarning, setFullscreenWarning] = useState(false);
 
   /* ================= REFS ================= */
   const videoRef = useRef(null);
@@ -52,6 +53,36 @@ export default function InterviewFlow({
     document.body.style.overflow = "hidden";
     return () => (document.body.style.overflow = "");
   }, []);
+
+  /* ================= FULLSCREEN ENFORCEMENT ================= */
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+      
+      if (!isFullscreen && !interviewComplete) {
+        setFullscreenWarning(true);
+        // Request fullscreen again
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, [interviewComplete]);
 
   /* ================= FETCH QUESTION ================= */
   const fetchQuestion = async (qnNumber, lastQ = "", lastA = "", isInitial = false) => {
@@ -316,6 +347,22 @@ export default function InterviewFlow({
     else startCamera();
   };
 
+  const handleReturnToDashboard = () => {
+    // Exit fullscreen
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.msExitFullscreen) {
+      document.msExitFullscreen();
+    }
+    
+    // Navigate back to dashboard
+    if (onBack) {
+      onBack();
+    }
+  };
+
   /* ================= LOADING ================= */
   if (loading) {
     return (
@@ -470,7 +517,7 @@ export default function InterviewFlow({
                 </div>
               )}
 
-              <button onClick={onBack} className={styles.finishButton}>
+              <button onClick={handleReturnToDashboard} className={styles.finishButton}>
                 Return to Dashboard <ArrowRight size={18} />
               </button>
             </>
@@ -483,6 +530,29 @@ export default function InterviewFlow({
   /* ================= UI ================= */
   return (
     <div className={styles.container}>
+      {fullscreenWarning && (
+        <div className={styles.fullscreenWarning}>
+          <div className={styles.warningContent}>
+            <AlertCircle size={48} color="#dc2626" />
+            <h3>Fullscreen Required</h3>
+            <p>You must remain in fullscreen mode during the interview</p>
+            <button onClick={() => {
+              setFullscreenWarning(false);
+              const elem = document.documentElement;
+              if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+              } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+              } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+              }
+            }} className={styles.warningBtn}>
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className={styles.interviewShell}>
         <header className={styles.header}>
           <h1>

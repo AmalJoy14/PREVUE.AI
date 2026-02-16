@@ -18,11 +18,34 @@ export default function Home() {
   const [currentPage, setCurrentPage] = useState("home")
   const [profileOpen, setProfileOpen] = useState(false)
   const [logoutModalOpen, setLogoutModalOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Sync context -> local UI user
   useEffect(() => {
     if (ctxUser) setUser(ctxUser)
   }, [ctxUser])
+
+  // Detect fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    // Initial check
+    setIsFullscreen(!!document.fullscreenElement);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
 
   const handleSaveProfile = async (newData) => {
     try {
@@ -81,39 +104,44 @@ export default function Home() {
 
           <nav className={styles.navbarRight}>
 
-            {/* HOME */}
-            <button
-              onClick={() => setCurrentPage("home")}
-              className={`${styles.navItem} ${currentPage === "home" ? styles.active : ""}`}
-            >
-              Home
-            </button>
+            {/* Hide nav items in fullscreen mode, keep only avatar */}
+            {!isFullscreen && (
+              <>
+                {/* HOME */}
+                <button
+                  onClick={() => setCurrentPage("home")}
+                  className={`${styles.navItem} ${currentPage === "home" ? styles.active : ""}`}
+                >
+                  Home
+                </button>
 
-            {/* DASHBOARD */}
-            <button
-              onClick={() => setCurrentPage("dashboard")}
-              className={`${styles.navItem} ${currentPage === "dashboard" ? styles.active : ""}`}
-            >
-              Dashboard
-            </button>
+                {/* DASHBOARD */}
+                <button
+                  onClick={() => setCurrentPage("dashboard")}
+                  className={`${styles.navItem} ${currentPage === "dashboard" ? styles.active : ""}`}
+                >
+                  Dashboard
+                </button>
 
-            {/* HISTORY */}
-            <button
-              onClick={() => setCurrentPage("history")}
-              className={`${styles.navItem} ${currentPage === "history" ? styles.active : ""}`}
-            >
-              Interview History
-            </button>
+                {/* HISTORY */}
+                <button
+                  onClick={() => setCurrentPage("history")}
+                  className={`${styles.navItem} ${currentPage === "history" ? styles.active : ""}`}
+                >
+                  Interview History
+                </button>
 
-            {/* ABOUT */}
-            <button
-              onClick={() => setCurrentPage("about")}
-              className={`${styles.navItem} ${currentPage === "about" ? styles.active : ""}`}
-            >
-              About Us
-            </button>
+                {/* ABOUT */}
+                <button
+                  onClick={() => setCurrentPage("about")}
+                  className={`${styles.navItem} ${currentPage === "about" ? styles.active : ""}`}
+                >
+                  About Us
+                </button>
+              </>
+            )}
 
-            {/* AVATAR */}
+            {/* AVATAR - Always visible */}
             <button
               className={styles.avatarBtn}
               onClick={() => setProfileOpen(true)}
@@ -129,18 +157,21 @@ export default function Home() {
               />
             </button>
 
-            <button
-              className={styles.logoutBtn}
-              onClick={() => setLogoutModalOpen(true)}
-              aria-label="Logout"
-              title="Logout"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-            </button>
+            {/* Hide logout button in fullscreen mode */}
+            {!isFullscreen && (
+              <button
+                className={styles.logoutBtn}
+                onClick={() => setLogoutModalOpen(true)}
+                aria-label="Logout"
+                title="Logout"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+              </button>
+            )}
 
           </nav>
         </div>

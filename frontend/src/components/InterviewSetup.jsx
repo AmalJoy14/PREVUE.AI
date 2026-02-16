@@ -13,10 +13,24 @@ export default function InterviewSetup({ onBack }) {
   const [mode, setMode] = useState("")
   const [difficulty, setDifficulty] = useState("")
   const [startInterview, setStartInterview] = useState(false)
+  const [fullscreenError, setFullscreenError] = useState("")
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (role && mode && difficulty) {
-      setStartInterview(true)
+      try {
+        // Request fullscreen
+        const elem = document.documentElement
+        if (elem.requestFullscreen) {
+          await elem.requestFullscreen()
+        } else if (elem.webkitRequestFullscreen) {
+          await elem.webkitRequestFullscreen()
+        } else if (elem.msRequestFullscreen) {
+          await elem.msRequestFullscreen()
+        }
+        setStartInterview(true)
+      } catch (error) {
+        setFullscreenError("Please allow fullscreen mode to start the interview")
+      }
     }
   }
 
@@ -76,6 +90,12 @@ export default function InterviewSetup({ onBack }) {
             ))}
           </div>
         </div>
+
+        {fullscreenError && (
+          <div className={styles.errorMessage}>
+            {fullscreenError}
+          </div>
+        )}
 
         <button onClick={handleStart} disabled={!role || !mode || !difficulty} className={styles.startBtn}>
           Start Interview
