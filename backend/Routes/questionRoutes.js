@@ -379,7 +379,17 @@ Respond in JSON format:
 /* ================= FINALIZE INTERVIEW & CALCULATE SCORES ================= */
 router.post("/finalize-interview", async (req, res) => {
   const userId = req.user?._id || req.user?.id;
-  const { interviewId, eyeContact, confidence, engagement } = req.body || {};
+  const { 
+    interviewId, 
+    eyeContact, 
+    confidence, 
+    engagement,
+    professionalism,
+    stability,
+    facePresence,
+    blinkRate,
+    avgConfidence
+  } = req.body || {};
 
   if (!interviewId) {
     return res.status(400).json({ error: "Interview ID is required" });
@@ -413,17 +423,35 @@ router.post("/finalize-interview", async (req, res) => {
       interviewResult.overallStructure = Math.round(avgStructure * 10) / 10;
     }
 
-    // Set video analysis scores (these would come from video analysis in the future)
+    // Set video analysis scores
     interviewResult.eyeContact = eyeContact || 0;
-    interviewResult.confidence = confidence || 0;
+    interviewResult.confidence = confidence || avgConfidence || 0;
     interviewResult.engagement = engagement || 0;
+    
+    // Set behavioral analysis scores
+    interviewResult.professionalism = professionalism || 0;
+    interviewResult.stability = stability || 0;
+    interviewResult.facePresence = facePresence || 0;
+    interviewResult.blinkRate = blinkRate || 0;
 
-    // Calculate total score (average of 4 metrics, excluding camera metrics for now)
+    // Calculate total score: 50% Verbal Analysis + 50% Behavioral Analysis
+    // Verbal scores are /10
+    const verbalAverage = (
+      interviewResult.overallCorrectness +
+      interviewResult.overallDepth +
+      interviewResult.overallStructure
+    ) / 3;
+
+    // Behavioral scores are /100 (percentages), convert to /10 scale
+    const behavioralAverage = (
+      ((eyeContact || 0) / 10) +
+      ((confidence || avgConfidence || 0) / 10) +
+      ((stability || 0) / 10)
+    ) / 3;
+
+    // Average verbal and behavioral scores (both on /10 scale)
     interviewResult.totalScore = Math.round(
-      (interviewResult.overallCorrectness +
-        interviewResult.overallDepth +
-        interviewResult.overallPracticalExperience +
-        interviewResult.overallStructure) / 4 * 10
+      ((verbalAverage + behavioralAverage) / 2) * 10
     ) / 10;
 
     // --- Generate Qualitative Feedback (Pros/Cons) ---
@@ -542,7 +570,7 @@ router.get("/analytics", async (req, res) => {
 
   try {
     const interviews = await InterviewResult.find({ userId })
-      .select("role mode difficulty totalScore overallCorrectness overallDepth overallPracticalExperience overallStructure createdAt")
+      .select("role mode difficulty totalScore overallCorrectness overallDepth overallStructure eyeContact confidence stability createdAt")
       .sort({ createdAt: 1 });
 
     if (interviews.length === 0) {
@@ -562,14 +590,18 @@ router.get("/analytics", async (req, res) => {
     const averageScore = scores.reduce((a, b) => a + b, 0) / totalInterviews;
     const recentScore = scores[scores.length - 1];
 
-    // Skill trends over time (last 10 interviews)
+    // Skill trends over time (last 10 interviews) - includes verbal and behavioral analysis
     const recentForTrends = interviews.slice(-10);
     const skillTrends = recentForTrends.map((interview, idx) => ({
       interview: idx + 1,
+      // Verbal Analysis
       correctness: Math.round((interview.overallCorrectness || 0) * 10),
       depth: Math.round((interview.overallDepth || 0) * 10),
-      practical: Math.round((interview.overallPracticalExperience || 0) * 10),
       structure: Math.round((interview.overallStructure || 0) * 10),
+      // Behavioral Analysis
+      eyeContact: Math.round(interview.eyeContact || 0),
+      confidence: Math.round(interview.confidence || 0),
+      stability: Math.round(interview.stability || 0),
       date: interview.createdAt
     }));
 

@@ -58,6 +58,23 @@ const interviewResultSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // Behavioral Analysis Scores
+    professionalism: {
+        type: Number,
+        default: 0
+    },
+    stability: {
+        type: Number,
+        default: 0
+    },
+    facePresence: {
+        type: Number,
+        default: 0
+    },
+    blinkRate: {
+        type: Number,
+        default: 0
+    },
     totalScore: {
         type: Number,
         default: 0

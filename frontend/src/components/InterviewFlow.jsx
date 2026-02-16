@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Loader2, MessageSquare, Trophy, CheckCircle, Zap, Briefcase, Layout, ArrowRight, TrendingUp, AlertCircle } from "lucide-react";
+import { Loader2, MessageSquare, Trophy, CheckCircle, Zap, Briefcase, Layout, ArrowRight, TrendingUp, AlertCircle, Eye, Lightbulb, Activity, Smile } from "lucide-react";
 import CameraFeed from "./CameraFeed";
 import QuestionCard from "./QuestionCard";
 import styles from "./InterviewFlow.module.css";
@@ -38,6 +38,16 @@ export default function InterviewFlow({
   const [feedback, setFeedback] = useState(null);
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
   const [fullscreenWarning, setFullscreenWarning] = useState(false);
+
+  // Behavior Analysis Scores
+  const [behaviorScores, setBehaviorScores] = useState({
+    avgConfidence: 0,
+    eyeContact: 0,
+    stability: 0,
+    facePresence: 0,
+    blinkRate: 0,
+    professionalism: 0
+  });
 
   /* ================= REFS ================= */
   const videoRef = useRef(null);
@@ -261,6 +271,21 @@ export default function InterviewFlow({
     setCameraOn(false);
   };
 
+  /* ================= SESSION COMPLETE HANDLER ================= */
+  const handleSessionComplete = (scores) => {
+    // Store behavior analysis scores from camera feed
+    setBehaviorScores({
+      avgConfidence: scores.avgConfidence || 0,
+      eyeContact: scores.eyeContact || 0,
+      stability: scores.stability || 0,
+      facePresence: scores.facePresence || 0,
+      blinkRate: scores.blinkRate || 0,
+      professionalism: scores.professionalism || 0
+    });
+    
+    console.log("📊 Behavior Analysis Scores Captured:", scores);
+  };
+
   /* ================= NEXT (Updated for silent evaluation) ================= */
   const handleNext = () => {
     stopRecording();
@@ -300,9 +325,14 @@ export default function InterviewFlow({
             `${API_BASE}/api/questions/finalize-interview`,
             { 
               interviewId,
-              eyeContact: 0,
-              confidence: 0,
-              engagement: 0
+              eyeContact: behaviorScores.eyeContact,
+              confidence: behaviorScores.avgConfidence,
+              engagement: 0,
+              professionalism: behaviorScores.professionalism,
+              stability: behaviorScores.stability,
+              facePresence: behaviorScores.facePresence,
+              blinkRate: behaviorScores.blinkRate,
+              avgConfidence: behaviorScores.avgConfidence
             },
             { withCredentials: true }
           );
@@ -419,6 +449,13 @@ export default function InterviewFlow({
               </div>
 
               <div className={styles.metricsGrid}>
+                {/* Verbal Analysis Header */}
+                <div style={{gridColumn: '1 / -1', marginBottom: '8px'}}>
+                  <h3 style={{fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: '0 0 20px 0', paddingBottom: '12px', borderBottom: '2px solid #e2e8f0'}}>
+                    Verbal Analysis
+                  </h3>
+                </div>
+
                 {/* Correctness */}
                 <div className={styles.metricCard}>
                   <div className={styles.metricHeader}>
@@ -451,22 +488,6 @@ export default function InterviewFlow({
                   </div>
                 </div>
 
-                {/* Practical Experience */}
-                <div className={styles.metricCard}>
-                  <div className={styles.metricHeader}>
-                    <div className={styles.iconBox} style={{background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b'}}>
-                      <Briefcase size={18} />
-                    </div>
-                    <span>Experience</span>
-                  </div>
-                  <div className={styles.metricValue}>
-                    {Math.round((feedback.results?.practicalExperience || 0) * 10)}%
-                  </div>
-                  <div className={styles.metricBar}>
-                    <div className={styles.metricFill} style={{width: `${(feedback.results?.practicalExperience || 0) * 10}%`, backgroundColor: '#f59e0b'}}></div>
-                  </div>
-                </div>
-
                 {/* Structure */}
                 <div className={styles.metricCard}>
                   <div className={styles.metricHeader}>
@@ -484,13 +505,71 @@ export default function InterviewFlow({
                 </div>
               </div>
 
-              {/* Qualitative Feedback Section */}
+              {/* Behavioral Analysis Section */}
+              <div className={styles.metricsGrid}>
+                {/* Behavioral Analysis Header */}
+                <div style={{gridColumn: '1 / -1', marginBottom: '8px'}}>
+                  <h3 style={{fontSize: '18px', fontWeight: '700', color: '#0f172a', margin: '0 0 20px 0', paddingBottom: '12px', borderBottom: '2px solid #e2e8f0'}}>
+                    📊 Behavioral Analysis
+                  </h3>
+                </div>
+
+                {/* Eye Contact */}
+                  <div className={styles.metricCard}>
+                    <div className={styles.metricHeader}>
+                      <div className={styles.iconBox} style={{background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1'}}>
+                        <Eye size={18} />
+                      </div>
+                      <span>Eye Contact</span>
+                    </div>
+                    <div className={styles.metricValue}>
+                      {Math.round(behaviorScores.eyeContact)}%
+                    </div>
+                    <div className={styles.metricBar}>
+                      <div className={styles.metricFill} style={{width: `${behaviorScores.eyeContact}%`, backgroundColor: '#6366f1'}}></div>
+                    </div>
+                  </div>
+
+                  {/* Confidence */}
+                  <div className={styles.metricCard}>
+                    <div className={styles.metricHeader}>
+                      <div className={styles.iconBox} style={{background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899'}}>
+                        <Lightbulb size={18} />
+                      </div>
+                      <span>Confidence</span>
+                    </div>
+                    <div className={styles.metricValue}>
+                      {Math.round(behaviorScores.avgConfidence)}%
+                    </div>
+                    <div className={styles.metricBar}>
+                      <div className={styles.metricFill} style={{width: `${behaviorScores.avgConfidence}%`, backgroundColor: '#ec4899'}}></div>
+                    </div>
+                  </div>
+
+                  {/* Stability */}
+                  <div className={styles.metricCard}>
+                    <div className={styles.metricHeader}>
+                      <div className={styles.iconBox} style={{background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e'}}>
+                        <Activity size={18} />
+                      </div>
+                      <span>Stability</span>
+                    </div>
+                    <div className={styles.metricValue}>
+                      {Math.round(behaviorScores.stability)}%
+                    </div>
+                    <div className={styles.metricBar}>
+                      <div className={styles.metricFill} style={{width: `${behaviorScores.stability}%`, backgroundColor: '#22c55e'}}></div>
+                    </div>
+                  </div>
+
+                </div>
+
               {feedback.results?.feedbackSummary && (
                 <div className={styles.qualitativeSection}>
                   <div className={styles.feedbackColumn}>
                     <div className={styles.columnHeader}>
                       <div className={styles.iconBox} style={{background: 'rgba(16, 185, 129, 0.1)', color: '#10b981'}}>
-                        <TrendingUp size={20} />
+                        <TrendingUp size={18} />
                       </div>
                       <h3>Key Strengths</h3>
                     </div>
@@ -504,7 +583,7 @@ export default function InterviewFlow({
                   <div className={styles.feedbackColumn}>
                     <div className={styles.columnHeader}>
                       <div className={styles.iconBox} style={{background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444'}}>
-                        <AlertCircle size={20} />
+                        <AlertCircle size={18} />
                       </div>
                       <h3>Areas for Improvement</h3>
                     </div>
@@ -590,6 +669,7 @@ export default function InterviewFlow({
             cameraOn={cameraOn}
             mediaError={mediaError}
             sessionActive={!loading && !interviewComplete}
+            onSessionComplete={handleSessionComplete}
           />
         </div>
       </div>
