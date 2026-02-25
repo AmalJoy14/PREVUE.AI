@@ -72,6 +72,35 @@
 }
 
 /* ==============================
+   Camera Off Overlay
+============================== */
+
+.cameraOffOverlay {
+  position: absolute;
+  inset: 0;
+  background: #0b1220;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #4b5563;
+  z-index: 10;
+}
+
+.cameraOffOverlay svg {
+  opacity: 0.5;
+}
+
+.cameraOffOverlay span {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.5;
+  letter-spacing: 0.5px;
+}
+
+
+/* ==============================
    Face Warning Overlay
 ============================== */
 
@@ -134,6 +163,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -144,6 +174,7 @@
     transform: scale(0.9);
     opacity: 0;
   }
+
   to {
     transform: scale(1);
     opacity: 1;
