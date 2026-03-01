@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import InterviewFlow from "./InterviewFlow"
 import styles from "./InterviewSetup.module.css"
 import { Upload, FileText, CheckCircle, AlertCircle } from 'lucide-react'
+import { generateSimliSessionToken, generateIceServers } from "simli-client"
 
 const ROLES = ["Software Developer", "Frontend Developer", "Backend Developer", "Data Analyst", "Full Stack Developer", "DevOps Engineer"]
 const MODES = ["Technical", "HR"]
@@ -25,6 +26,26 @@ export default function InterviewSetup({ onBack }) {
   const [resumeError, setResumeError] = useState("")
   const [startInterview, setStartInterview] = useState(false)
   const [fullscreenError, setFullscreenError] = useState("")
+
+  // Pre-fetch Simli session token + ICE servers while user fills the form
+  // so SimliAvatar connects instantly when the interview starts.
+  const simliPrefetch = useRef(null)
+  useEffect(() => {
+    const SIMLI_API_KEY = import.meta.env.VITE_SIMLI_API_KEY || ""
+    const SIMLI_FACE_ID = import.meta.env.VITE_SIMLI_FACE_ID || ""
+    if (!SIMLI_API_KEY || !SIMLI_FACE_ID) return
+    Promise.all([
+      generateSimliSessionToken({
+        apiKey: SIMLI_API_KEY,
+        config: { faceId: SIMLI_FACE_ID, maxSessionLength: 600, maxIdleTime: 300 },
+      }),
+      generateIceServers(SIMLI_API_KEY),
+    ])
+      .then(([tokenResp, iceServers]) => {
+        simliPrefetch.current = { session_token: tokenResp.session_token, iceServers }
+      })
+      .catch(() => { /* silent — SimliAvatar will fetch its own credentials */ })
+  }, [])
 
   const handleResumeUpload = async (event) => {
     const file = event.target.files?.[0]
@@ -119,6 +140,7 @@ export default function InterviewSetup({ onBack }) {
         difficulty={difficulty}
         resumeContext={resumeContext}
         onBack={onBack}
+        simliPrefetch={simliPrefetch.current}
       />
     )
   }
@@ -184,10 +206,10 @@ export default function InterviewSetup({ onBack }) {
           <div className={styles.rightColumn}>
             <div className={styles.resumeSection}>
               <label className={styles.sectionLabel}>
-                <Upload size={18} style={{marginRight: '8px', verticalAlign: 'middle'}} />
+                <Upload size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                 Upload Resume (Optional)
               </label>
-              
+
               {!resumeFile ? (
                 <div className={styles.uploadArea}>
                   <input
@@ -224,14 +246,14 @@ export default function InterviewSetup({ onBack }) {
                   </div>
 
                   {resumeError && (
-                    <div className={styles.statusBanner} style={{background: '#fef2f2', color: '#dc2626', borderColor: '#fecaca'}}>
+                    <div className={styles.statusBanner} style={{ background: '#fef2f2', color: '#dc2626', borderColor: '#fecaca' }}>
                       <AlertCircle size={16} />
                       <span>{resumeError}</span>
                     </div>
                   )}
 
                   {resumeContext && !resumeError && (
-                    <div className={styles.statusBanner} style={{background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0'}}>
+                    <div className={styles.statusBanner} style={{ background: '#f0fdf4', color: '#16a34a', borderColor: '#bbf7d0' }}>
                       <CheckCircle size={16} />
                       <span>Resume analyzed successfully{role ? ` (${role})` : ""}</span>
                     </div>
@@ -239,8 +261,8 @@ export default function InterviewSetup({ onBack }) {
 
                   {resumePreviewUrl && (
                     <div className={styles.pdfPreview}>
-                      <iframe 
-                        src={resumePreviewUrl} 
+                      <iframe
+                        src={resumePreviewUrl}
                         className={styles.pdfFrame}
                         title="Resume Preview"
                       />

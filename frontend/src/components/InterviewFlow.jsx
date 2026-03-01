@@ -3,6 +3,7 @@ import axios from "axios";
 import { Loader2, MessageSquare, Trophy, CheckCircle, Zap, Briefcase, Layout, ArrowRight, TrendingUp, AlertCircle, Eye, Lightbulb, Activity, Smile } from "lucide-react";
 import CameraFeed from "./CameraFeed";
 import QuestionCard from "./QuestionCard";
+import SimliAvatar from "./SimliAvatar";
 import styles from "./InterviewFlow.module.css";
 
 const API_BASE =
@@ -20,6 +21,7 @@ export default function InterviewFlow({
   difficulty = "Medium",
   resumeContext = "",
   onBack,
+  simliPrefetch = null,
 }) {
   /* ================= STATE ================= */
   const [interviewId, setInterviewId] = useState(null);
@@ -59,6 +61,7 @@ export default function InterviewFlow({
   const chunksRef = useRef([]);
   const ttsAudioRef = useRef(null);
   const ttsAbortRef = useRef(null);
+  const simliRef = useRef(null);  // SimliAvatar imperative handle
 
   const interviewCreatedRef = useRef(false);
   const behaviorScoresRef = useRef({
@@ -239,6 +242,29 @@ export default function InterviewFlow({
     setTtsSource("Idle");
   };
 
+  /**
+   * Decode an MP3 Blob → PCM16 Uint8Array at 16 kHz
+   * so it can be fed directly to SimliClient.sendAudioData()
+   */
+  const mp3BlobToPCM16 = async (blob) => {
+    const arrayBuffer = await blob.arrayBuffer();
+    // Decode compressed audio to raw float32 samples
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+    const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+    await audioCtx.close();
+
+    // Mix down to mono and grab the samples
+    const samples = decoded.getChannelData(0); // Float32Array, already at 16kHz
+
+    // Convert Float32 [-1..1] → Int16 [-32768..32767]
+    const pcm16 = new Int16Array(samples.length);
+    for (let i = 0; i < samples.length; i++) {
+      const clamped = Math.max(-1, Math.min(1, samples[i]));
+      pcm16[i] = clamped < 0 ? clamped * 32768 : clamped * 32767;
+    }
+    return new Uint8Array(pcm16.buffer);
+  };
+
   const speakQuestion = async (text) => {
     if (!text) return;
 
@@ -309,7 +335,43 @@ export default function InterviewFlow({
         stopRecording();
       }
 
-      await audio.play();
+      // Decode MP3 → PCM16 and send to Simli avatar
+      // Simli handles both audio playback + lip-sync via WebRTC (perfectly in sync)
+      let simliHandling = false;
+      try {
+        const pcm16 = await mp3BlobToPCM16(audioBlob);
+        simliHandling = true;
+        const chunkSize = 6000;
+        for (let offset = 0; offset < pcm16.length; offset += chunkSize) {
+          simliRef.current?.sendPCM(pcm16.slice(offset, offset + chunkSize));
+        }
+      } catch (err) {
+        console.warn("Simli PCM encode error:", err);
+      }
+
+      if (simliHandling) {
+        // Simli handles audio — play browser element muted just to track duration / onended
+        audio.muted = true;
+        audio.play().catch(() => { });
+        // Wait for audio to finish so speakQuestion resolves at the right time
+        await new Promise((resolve) => {
+          audio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+            setTtsSource("Idle");
+            if (ttsAudioRef.current === audio) ttsAudioRef.current = null;
+            resolve();
+          };
+          audio.onerror = () => {
+            URL.revokeObjectURL(audioUrl);
+            if (ttsAudioRef.current === audio) ttsAudioRef.current = null;
+            resolve();
+          };
+        });
+      } else {
+        // Simli unavailable — fall back to audible browser playback
+        await audio.play();
+      }
+
     } catch (error) {
       if (error?.name === "AbortError") return;
       console.error("Gemini TTS failed, using browser fallback:", error?.message || error);
@@ -800,6 +862,9 @@ export default function InterviewFlow({
             <span>
               Question {index + 1} / {TOTAL_QUESTIONS}
             </span>
+            <button onClick={handleReturnToDashboard} className={styles.exitButton}>
+              Exit
+            </button>
 
           </div>
         </header>
@@ -826,14 +891,26 @@ export default function InterviewFlow({
             loading={questionLoading}
           />
 
-          <CameraFeed
-            videoRef={videoRef}
-            cameraOn={cameraOn}
-            mediaError={mediaError}
-            sessionActive={!loading && !interviewComplete}
-            onSessionComplete={handleSessionComplete}
-          />
+          {/* Right panel: avatar (grows) on top, candidate cam (fixed) below */}
+          <div className={styles.rightPanel}>
+            {/* Avatar fills all remaining height */}
+            <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <SimliAvatar ref={simliRef} prefetchedSession={simliPrefetch} />
+            </div>
+            {/* Candidate cam — compact fixed height */}
+            <div style={{ flex: "0 0 170px", minHeight: 0, overflow: "hidden" }}>
+              <CameraFeed
+                videoRef={videoRef}
+                cameraOn={cameraOn}
+                mediaError={mediaError}
+                sessionActive={!loading && !interviewComplete}
+                onSessionComplete={handleSessionComplete}
+              />
+            </div>
+          </div>
         </div>
+
+
       </div>
     </div>
   );
