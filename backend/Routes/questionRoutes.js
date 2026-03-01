@@ -180,7 +180,7 @@ router.post("/next-question", async (req, res) => {
     6: "best practices or optimization"
   };
 
-  // HR mode topics (behavioral, soft skills)
+  // Scheduler mode topics (behavioral, soft skills)
   const hrQuestionTopics = {
     1: "work style, motivations, and professional goals",
     2: "handling challenges, conflicts, or difficult situations",
@@ -190,7 +190,7 @@ router.post("/next-question", async (req, res) => {
     6: "culture fit, values, and long-term aspirations"
   };
 
-  // Use HR topics for HR mode, technical topics otherwise
+  // Use Scheduler topics for HR mode, technical topics otherwise
   const selectedTopics = mode === "HR" ? hrQuestionTopics : questionTopics;
 
   // Special guidance for Software Developer role
@@ -203,10 +203,10 @@ router.post("/next-question", async (req, res) => {
 `
     : "";
 
-  // HR mode guidance
+  // Scheduler mode guidance
   const modeGuidance = mode === "HR"
     ? `
-**MANDATORY FOR HR MODE: Ask ONLY behavioral and soft skill questions.**
+**MANDATORY FOR SCHEDULER MODE: Ask ONLY behavioral and soft skill questions.**
 - NO technical questions
 - NO coding, algorithms, or technology-specific topics
 - Focus on: work style, teamwork, problem-solving approach, communication, adaptability, values
@@ -449,6 +449,7 @@ router.post("/schedule-interview", async (req, res) => {
         ${normalizedNotes ? `<p><strong>Notes:</strong> ${normalizedNotes}</p>` : ""}
         <p>Click the secure interview link below. No signup is required; just enter your name and email:</p>
         <p><a href="${interviewLink}">${interviewLink}</a></p>
+        <p style="color: #dc2626; font-weight: 600;">⚠️ Important: This link will expire 30 minutes after your scheduled interview time (${inviteDate}).</p>
         <p>Regards,<br/>${hrEmail}</p>
       `,
     });

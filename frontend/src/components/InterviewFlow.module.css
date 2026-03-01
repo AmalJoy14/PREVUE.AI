@@ -15,6 +15,13 @@
   overflow: hidden;
 }
 
+.containerGuest {
+  height: 100vh;
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f6ff, #e8ecff);
+  overflow: hidden;
+}
+
 /* ================= SHELL ================= */
 .interviewShell {
   height: 100%;

@@ -17,7 +17,51 @@ const __dirname = path.dirname(__filename);
 const router = express.Router();
 
 /* =========================
-   GUEST INTERVIEW ACCESS
+   GUEST INTERVIEW ACCESS - GET DETAILS
+========================= */
+router.get("/guest-access/:token", async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      return res.status(400).json({ message: "Token is required" });
+    }
+
+    const schedule = await HrInterviewSchedule.findOne({
+      inviteToken: token,
+      status: "scheduled",
+    });
+
+    if (!schedule) {
+      return res.status(404).json({ message: "Invalid or expired interview link" });
+    }
+
+    const scheduledDate = new Date(schedule.scheduledAt);
+    if (!Number.isNaN(scheduledDate.getTime())) {
+      const expiryWindowMs = 30 * 60 * 1000; // 30 minutes
+      if (Date.now() > scheduledDate.getTime() + expiryWindowMs) {
+        return res.status(410).json({ message: "This interview link has expired" });
+      }
+    }
+
+    return res.status(200).json({
+      schedule: {
+        candidateName: schedule.candidateName,
+        candidateEmail: schedule.candidateEmail,
+        role: schedule.role,
+        mode: schedule.mode,
+        difficulty: schedule.difficulty,
+        scheduledAt: schedule.scheduledAt,
+        notes: schedule.notes,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Failed to fetch interview details" });
+  }
+});
+
+/* =========================
+   GUEST INTERVIEW ACCESS - START
 ========================= */
 router.post("/guest-access/:token", async (req, res) => {
   try {
@@ -46,7 +90,7 @@ router.post("/guest-access/:token", async (req, res) => {
 
     const scheduledDate = new Date(schedule.scheduledAt);
     if (!Number.isNaN(scheduledDate.getTime())) {
-      const expiryWindowMs = 24 * 60 * 60 * 1000;
+      const expiryWindowMs = 30 * 60 * 1000; // 30 minutes
       if (Date.now() > scheduledDate.getTime() + expiryWindowMs) {
         return res.status(410).json({ message: "This interview link has expired" });
       }

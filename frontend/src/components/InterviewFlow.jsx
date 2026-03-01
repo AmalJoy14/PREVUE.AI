@@ -22,6 +22,7 @@ export default function InterviewFlow({
   resumeContext = "",
   onBack,
   simliPrefetch = null,
+  isGuestMode = false,
 }) {
   /* ================= STATE ================= */
   const [interviewId, setInterviewId] = useState(null);
@@ -829,7 +830,7 @@ export default function InterviewFlow({
 
   /* ================= UI ================= */
   return (
-    <div className={styles.container}>
+    <div className={isGuestMode ? styles.containerGuest : styles.container}>
       {fullscreenWarning && (
         <div className={styles.fullscreenWarning}>
           <div className={styles.warningContent}>

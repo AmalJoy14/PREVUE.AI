@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import styles from "./HRModeScheduler.module.css";
+import styles from "./Scheduler.module.css";
 
 const ROLES = [
   "Software Developer",
@@ -18,7 +18,7 @@ const API_BASE =
   (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_URL) ||
   "http://localhost:3000";
 
-export default function HRModeScheduler() {
+export default function Scheduler() {
   const [candidateName, setCandidateName] = useState("");
   const [candidateEmail, setCandidateEmail] = useState("");
   const [role, setRole] = useState("Software Developer");
@@ -104,7 +104,7 @@ export default function HRModeScheduler() {
   return (
     <div className={styles.container}>
       <header className={styles.header}>
-        <h2>HR MODE</h2>
+        <h2>Scheduler</h2>
         <p>Schedule interviews for candidates who do not yet have an account.</p>
       </header>
 
