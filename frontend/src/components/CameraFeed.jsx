@@ -96,7 +96,7 @@ export default function CameraFeed({
 
     analyticsRef.current.smoothedConfidence =
       analyticsRef.current.smoothedConfidence *
-        (1 - SMOOTHING) +
+      (1 - SMOOTHING) +
       rawConfidence * SMOOTHING;
 
     analyticsRef.current.confidenceSum +=
@@ -158,7 +158,7 @@ export default function CameraFeed({
         videoRef.current &&
         videoRef.current.readyState === 4 &&
         now - lastProcessTimeRef.current >
-          PROCESS_INTERVAL
+        PROCESS_INTERVAL
       ) {
         lastProcessTimeRef.current = now;
 
@@ -190,13 +190,13 @@ export default function CameraFeed({
 
       const avgConfidence = Math.round(
         data.confidenceSum /
-          data.faceDetectedFrames
+        data.faceDetectedFrames
       );
 
       const eyeContact = Math.round(
         (data.eyeContactFrames /
           data.faceDetectedFrames) *
-          100
+        100
       );
 
       const stability = Math.round(
@@ -205,27 +205,27 @@ export default function CameraFeed({
           100,
           (data.headMovementCount /
             data.faceDetectedFrames) *
-            100
+          100
         )
       );
 
       const facePresence = Math.round(
         (data.faceDetectedFrames /
           data.totalFrames) *
-          100
+        100
       );
 
       const blinkRate = Math.round(
         data.blinkCount /
-          (data.faceDetectedFrames / 60)
+        (data.faceDetectedFrames / 60)
       );
 
       const professionalism = Math.round(
         avgConfidence * 0.3 +
-          eyeContact * 0.25 +
-          stability * 0.2 +
-          facePresence * 0.15 +
-          (100 - blinkRate) * 0.1
+        eyeContact * 0.25 +
+        stability * 0.2 +
+        facePresence * 0.15 +
+        (100 - blinkRate) * 0.1
       );
 
       if (onSessionComplete) {
@@ -266,6 +266,13 @@ export default function CameraFeed({
 
       <div className={styles.videoBox}>
         <video ref={videoRef} autoPlay muted playsInline />
+
+        {!cameraOn && (
+          <div className={styles.cameraOffOverlay}>
+            <VideoOff size={40} />
+            <span>Camera Off</span>
+          </div>
+        )}
 
         {warning === "noFace" && (
           <div className={styles.faceWarningOverlay}>

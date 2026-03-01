@@ -13,16 +13,41 @@ const ttsClient = new textToSpeech.TextToSpeechClient({
 const DEFAULT_VOICE_NAME = process.env.GCP_TTS_VOICE || "en-US-Neural2-D"; // professional male
 const DEFAULT_LANGUAGE_CODE = process.env.GCP_TTS_LANGUAGE || "en-US";
 
+/**
+ * Strip symbols that TTS engines tend to speak aloud but shouldn't.
+ * Keeps natural punctuation (. , ? !) so pauses still sound right.
+ */
+function sanitizeForTTS(raw) {
+  return raw
+    // Remove code-style symbols
+    .replace(/[`*_~|\\^]/g, "")
+    // Remove angle brackets and their content (e.g. <br/>, <tag>)
+    .replace(/<[^>]*>/g, "")
+    // Remove brackets but keep their content
+    .replace(/[[\]{}()]/g, "")
+    // Remove hash / at / hash symbols
+    .replace(/[#@]/g, "")
+    // Remove semicolons and colons (often read as "semicolon")
+    .replace(/[;:]/g, ",")
+    // Remove slash and backslash
+    .replace(/[/\\]/g, " ")
+    // Collapse multiple spaces/newlines into a single space
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 router.post("/synthesize", authenticateToken, async (req, res) => {
   try {
     const { text = "", voiceName = DEFAULT_VOICE_NAME } = req.body || {};
 
-    if (!text.trim()) {
+    const cleanText = sanitizeForTTS(text);
+
+    if (!cleanText) {
       return res.status(400).json({ error: "Text is required" });
     }
 
     const [response] = await ttsClient.synthesizeSpeech({
-      input: { text },
+      input: { text: cleanText },
       voice: {
         languageCode: DEFAULT_LANGUAGE_CODE,
         name: voiceName,
