@@ -43,6 +43,7 @@ export default function InterviewFlow({
   const [generatingFeedback, setGeneratingFeedback] = useState(false);
   const [fullscreenWarning, setFullscreenWarning] = useState(false);
   const [ttsSource, setTtsSource] = useState("Idle");
+  const [greetingShown, setGreetingShown] = useState(false);
 
   // Behavior Analysis Scores
   const [behaviorScores, setBehaviorScores] = useState({
@@ -79,6 +80,8 @@ export default function InterviewFlow({
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
+      
+      // Stop TTS
       if (ttsAbortRef.current) {
         ttsAbortRef.current.abort();
         ttsAbortRef.current = null;
@@ -89,6 +92,22 @@ export default function InterviewFlow({
       }
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
+      }
+      
+      // Close Simli connection
+      if (simliRef.current) {
+        simliRef.current.close?.();
+      }
+      
+      // Stop camera and audio streams
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      
+      // Stop any recording
+      if (recorderRef.current?.state === "recording") {
+        recorderRef.current.stop();
       }
     };
   }, []);
@@ -137,6 +156,38 @@ export default function InterviewFlow({
     };
   }, [interviewComplete]);
 
+  /* ================= KEYBOARD SHORTCUTS ================= */
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Don't trigger shortcuts during loading states or after completion
+      if (loading || questionLoading || interviewComplete || generatingFeedback) {
+        return;
+      }
+
+      // Check if user is typing in textarea or input
+      const activeElement = document.activeElement;
+      const isTyping = activeElement?.tagName === 'TEXTAREA' || activeElement?.tagName === 'INPUT';
+
+      // Enter or Tab key → Next button (only when not typing)
+      if ((event.key === 'Enter' || event.key === 'Tab') && !isTyping) {
+        event.preventDefault();
+        handleNext();
+      }
+
+      // Space bar → Microphone toggle (only when not typing in textarea)
+      if (event.key === ' ' && !isTyping) {
+        event.preventDefault();
+        handleMicToggle();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [loading, questionLoading, interviewComplete, generatingFeedback, listening, answer, index, askedQuestions, answers]);
+
   /* ================= FETCH QUESTION ================= */
   const fetchQuestion = async (qnNumber, lastQ = "", lastA = "", isInitial = false, history = []) => {
     if (isInitial) {
@@ -170,7 +221,10 @@ export default function InterviewFlow({
         return copy;
       });
 
-      speakQuestion(q);
+      // Only auto-speak if not the first question (greeting handles first)
+      if (qnNumber !== 1 || !isInitial) {
+        speakQuestion(q);
+      }
     } catch {
       setQuestion("Failed to load question.");
     } finally {
@@ -204,6 +258,19 @@ export default function InterviewFlow({
     createInterview();
     // eslint-disable-next-line
   }, []);
+
+  /* ================= GREETING ================= */
+  useEffect(() => {
+    if (!loading && !greetingShown && question) {
+      setGreetingShown(true);
+      const greeting = `Hello! Welcome to your ${mode} interview for the ${role} position. Let's begin.`;
+      speakQuestion(greeting).then(() => {
+        // Speak the first question after greeting finishes
+        speakQuestion(question);
+      });
+    }
+    // eslint-disable-next-line
+  }, [loading, greetingShown, question]);
 
   /* ================= TTS ================= */
   const fallbackSpeakQuestion = (text) => {
@@ -502,7 +569,7 @@ export default function InterviewFlow({
   }, []);
 
   /* ================= NEXT (Updated for silent evaluation) ================= */
-  const handleNext = () => {
+  const handleNext = async () => {
     stopRecording();
 
     // Store answer for current question
@@ -523,7 +590,10 @@ export default function InterviewFlow({
 
     // ================= MOVE TO NEXT QUESTION =================
     if (index === TOTAL_QUESTIONS - 1) {
-      // Interview complete
+      // Interview complete - speak closing message first
+      const closingMessage = `Thank you for completing the interview. Generating your results now.`;
+      await speakQuestion(closingMessage);
+      
       setInterviewComplete(true);
       stopCamera();
       setGeneratingFeedback(true);
@@ -600,6 +670,26 @@ export default function InterviewFlow({
   };
 
   const handleReturnToDashboard = () => {
+    // Stop all media and close connections before leaving
+    if (listening) stopRecording();
+    if (cameraOn) stopCamera();
+    
+    // Close Simli connection immediately
+    if (simliRef.current) {
+      simliRef.current.close?.();
+    }
+    
+    // Stop TTS
+    if (ttsAbortRef.current) {
+      ttsAbortRef.current.abort();
+    }
+    if (ttsAudioRef.current) {
+      ttsAudioRef.current.pause();
+    }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    
     // Exit fullscreen
     if (document.exitFullscreen) {
       document.exitFullscreen().catch(() => { });
@@ -894,12 +984,12 @@ export default function InterviewFlow({
 
           {/* Right panel: avatar (grows) on top, candidate cam (fixed) below */}
           <div className={styles.rightPanel}>
-            {/* Avatar fills all remaining height */}
+            {/* Avatar takes 50% of height */}
             <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
               <SimliAvatar ref={simliRef} prefetchedSession={simliPrefetch} />
             </div>
-            {/* Candidate cam — compact fixed height */}
-            <div style={{ flex: "0 0 170px", minHeight: 0, overflow: "hidden" }}>
+            {/* Candidate cam takes 50% of height */}
+            <div style={{ flex: "1 1 0", minHeight: 0, overflow: "hidden" }}>
               <CameraFeed
                 videoRef={videoRef}
                 cameraOn={cameraOn}

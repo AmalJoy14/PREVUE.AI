@@ -37,7 +37,7 @@ const SimliAvatar = forwardRef(function SimliAvatar({ prefetchedSession }, ref) 
         setStatus(s);
     };
 
-    /* ── Expose sendPCM + isReady to parent ── */
+    /* ── Expose sendPCM + isReady + close to parent ── */
     useImperativeHandle(ref, () => ({
         /** true when Simli has an active session ready for audio */
         isReady() {
@@ -53,6 +53,21 @@ const SimliAvatar = forwardRef(function SimliAvatar({ prefetchedSession }, ref) 
                     doConnectRef.current();
                 }
             }
+        },
+        /** Explicitly close the connection */
+        close() {
+            generationRef.current++;
+            isConnecting.current = false;
+            pendingPCM.current = [];
+            try { 
+                if (clientRef.current?.close) {
+                    clientRef.current.close();
+                }
+            } catch { 
+                // Silently handle close errors
+            }
+            clientRef.current = null;
+            setLiveStatus("idle");
         },
     }));
 
@@ -154,7 +169,7 @@ const SimliAvatar = forwardRef(function SimliAvatar({ prefetchedSession }, ref) 
                             cooldownUntilRef.current = Date.now() + 20_000;
                             pendingPCM.current = [];
                         }
-                        if (generationRef.current === myGen) setLiveStatus("idle");
+                        if (generationRef.current === myGen) setLiveStatus("error");
                     });
 
                     await client.start();
@@ -165,7 +180,7 @@ const SimliAvatar = forwardRef(function SimliAvatar({ prefetchedSession }, ref) 
                         cooldownUntilRef.current = Date.now() + 20_000;
                         pendingPCM.current = [];
                     }
-                    if (generationRef.current === myGen) setLiveStatus("idle");
+                    if (generationRef.current === myGen) setLiveStatus("error");
                 } finally {
                     connectPromiseRef.current = null;
                 }
@@ -210,7 +225,7 @@ const SimliAvatar = forwardRef(function SimliAvatar({ prefetchedSession }, ref) 
                 {showError && (
                     <div className={styles.statusOverlay}>
                         <span className={styles.errorIcon}>⚠️</span>
-                        <span>Avatar unavailable</span>
+                        <span>Avatar Unavailable</span>
                     </div>
                 )}
             </div>
