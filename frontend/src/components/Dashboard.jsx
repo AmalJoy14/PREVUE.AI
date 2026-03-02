@@ -182,8 +182,8 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={analytics.skillTrends}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="interview" stroke="#64748b" />
-              <YAxis stroke="#64748b" domain={[0, 100]} />
+              <XAxis dataKey="interview" stroke="#64748b" label={{ value: 'Interview Number', position: 'insideBottom', offset: -5, style: { fill: '#64748b' } }} />
+              <YAxis stroke="#64748b" domain={[0, 100]} label={{ value: 'Score (%)', angle: -90, position: 'insideLeft', style: { fill: '#64748b' } }} />
               <Tooltip 
                 contentStyle={{background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}
               />
@@ -218,8 +218,8 @@ export default function Dashboard() {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={performanceByDifficultyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="difficulty" stroke="#64748b" />
-              <YAxis stroke="#64748b" domain={[0, 100]} />
+              <XAxis dataKey="difficulty" stroke="#64748b" label={{ value: 'Difficulty Level', position: 'insideBottom', offset: -5, style: { fill: '#64748b' } }} />
+              <YAxis stroke="#64748b" domain={[0, 100]} label={{ value: 'Average Score (%)', angle: -90, position: 'insideLeft', style: { fill: '#64748b' } }} />
               <Tooltip 
                 contentStyle={{background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px'}}
               />
