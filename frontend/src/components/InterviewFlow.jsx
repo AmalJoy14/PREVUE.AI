@@ -13,7 +13,7 @@ const API_BASE =
 // Configure axios to send credentials (cookies) with every request
 axios.defaults.withCredentials = true;
 
-const TOTAL_QUESTIONS = 15;
+const TOTAL_QUESTIONS = 10;
 
 export default function InterviewFlow({
   role = "Frontend Developer",

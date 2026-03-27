@@ -10,7 +10,7 @@ import sendEmail from "../utils/sendEmail.js";
 import userModel from "../models/user.js";
 
 const router = express.Router();
-const TOTAL_QUESTIONS = 15;
+const TOTAL_QUESTIONS = 10;
 const SUPPORTED_ROLES = [
   "Software Developer",
   "Frontend Developer",
@@ -70,6 +70,29 @@ const isQuestionDuplicate = (candidateQuestion = "", previousQuestions = []) => 
   }
 
   return false;
+};
+
+const isSameTopicAsLastQuestion = (candidateQuestion = "", lastQuestion = "") => {
+  const candidateNormalized = normalizeQuestion(candidateQuestion);
+  const lastNormalized = normalizeQuestion(lastQuestion);
+
+  if (!candidateNormalized || !lastNormalized) return false;
+
+  const stopWords = new Set([
+    "what", "why", "how", "when", "where", "which", "who", "can", "could", "would", "should",
+    "is", "are", "was", "were", "do", "does", "did", "the", "a", "an", "and", "or", "to", "of",
+    "in", "on", "for", "with", "about", "explain", "describe", "tell", "me", "you", "your"
+  ]);
+
+  const candidateTokens = new Set(candidateNormalized.split(" ").filter((t) => t && !stopWords.has(t)));
+  const lastTokens = new Set(lastNormalized.split(" ").filter((t) => t && !stopWords.has(t)));
+
+  if (candidateTokens.size === 0 || lastTokens.size === 0) return false;
+
+  const overlap = [...candidateTokens].filter((token) => lastTokens.has(token)).length;
+  const similarity = overlap / Math.max(candidateTokens.size, lastTokens.size);
+
+  return similarity >= 0.5;
 };
 
 // Protect all endpoints
@@ -162,63 +185,73 @@ router.post("/next-question", async (req, res) => {
     lastQuestion,
   ].filter(Boolean);
 
-  // Build conversation history text
-  const historyText =
-    history.length > 0
-      ? history
-          .map((item, i) => `Q${i + 1}: ${item.question}\nA${i + 1}: ${item.answer}`)
-          .join("\n\n")
-      : "No previous answers.";
+  // Build conversation history text with answer quality analysis
+  let historyText = "";
+  let coveredTopics = [];
+  
+  if (history.length > 0) {
+    historyText = history
+      .map((item, i) => {
+        // Extract topic hints from questions
+        const q = item.question || "";
+        if (q.toLowerCase().includes("data structure") || q.toLowerCase().includes("algorithm")) {
+          coveredTopics.push("algorithms");
+        }
+        if (q.toLowerCase().includes("design") || q.toLowerCase().includes("architecture")) {
+          coveredTopics.push("design");
+        }
+        if (q.toLowerCase().includes("experience") || q.toLowerCase().includes("project")) {
+          coveredTopics.push("experience");
+        }
+        if (q.toLowerCase().includes("challenge") || q.toLowerCase().includes("difficult")) {
+          coveredTopics.push("problem_solving");
+        }
+        return `Q${i + 1}: ${q}\nA${i + 1}: ${item.answer}`;
+      })
+      .join("\n\n");
+  } else {
+    historyText = "No previous answers - this is the first question.";
+  }
 
-  // Build prompt for Gemini question generation
-  const questionTopics = {
-    1: "core technical foundation and definitions",
-    2: "specific technical concepts or tools",
-    3: "implementation and practical application",
-    4: "problem-solving approach and methodology",
-    5: "advanced concepts or edge cases",
-    6: "best practices or optimization"
-  };
-
-  // Scheduler mode topics (behavioral, soft skills)
-  const hrQuestionTopics = {
-    1: "work style, motivations, and professional goals",
-    2: "handling challenges, conflicts, or difficult situations",
-    3: "teamwork, collaboration, and communication skills",
-    4: "leadership, initiative, or driving results",
-    5: "learning, growth mindset, and adaptability",
-    6: "culture fit, values, and long-term aspirations"
-  };
-
-  // Use Scheduler topics for HR mode, technical topics otherwise
-  const selectedTopics = mode === "HR" ? hrQuestionTopics : questionTopics;
+  // Determine interview stage for adaptive question strategy
+  const stage = qNum <= 3 ? "early" : qNum <= 6 ? "mid" : "late";
+  
+  // Determine if we should go deeper on recent topics or explore new areas
+  const shouldExploreNew = coveredTopics.length === 0 || qNum % 3 === 1;
+  const shouldGoDeeper = qNum > 3 && qNum % 3 !== 1;
 
   // Special guidance for Software Developer role
   const roleGuidance = role === "Software Developer" && mode === "Technical"
     ? `
-**MANDATORY: Software Developer questions MUST ONLY cover these 3 topics:**
+**MANDATORY: Software Developer questions MUST ONLY cover these 3 topics (rotate through them):**
 1. Data Structures & Algorithms (arrays, linked lists, trees, graphs, stacks, queues, hash maps, sorting, searching, Big O complexity analysis)
 2. Object-Oriented Programming (classes, objects, inheritance, polymorphism, encapsulation, abstraction, SOLID principles, design patterns like Factory, Singleton, Strategy, Observer)
 3. SQL & Databases (SELECT, JOIN, WHERE, GROUP BY, indexing, primary/foreign keys, normalization, schema design, query optimization, transactions)
 `
     : "";
 
-  // Scheduler mode guidance
+  // Detailed mode guidance with adaptive strategy
   const modeGuidance = mode === "HR"
     ? `
 **MANDATORY FOR SCHEDULER MODE: Ask ONLY behavioral and soft skill questions.**
 - NO technical questions
 - NO coding, algorithms, or technology-specific topics
 - Focus on: work style, teamwork, problem-solving approach, communication, adaptability, values
+- At this stage (Q${qNum}), ${shouldGoDeeper ? "go DEEPER into previous topics to assess consistency" : "explore a NEW behavioral area the candidate hasn't discussed yet"}
 `
     : "";
+
+  // Dynamic topic strategy
+  const topicStrategy = mode === "HR"
+    ? shouldExploreNew ? "Explore a completely new behavioral dimension" : "Dive deeper into a previously mentioned behavior"
+    : shouldExploreNew ? "Explore a new technical area or subtopic" : "Go deeper into a previous technical area";
 
   const isResumeBased = Boolean(resumeContext?.trim());
   const interviewerContext = isResumeBased
     ? `
 You are a human interviewer conducting a ${mode} interview based on the candidate's resume.
 Difficulty level: ${difficulty}.
-This is question ${qNum} out of ${TOTAL_QUESTIONS}.
+Interview progress: Question ${qNum} out of ${TOTAL_QUESTIONS} (${stage} stage).
 ${modeGuidance}
 
 Candidate resume content:
@@ -227,65 +260,111 @@ ${resumeContext.slice(0, 12000)}
     : `
 You are a human interviewer conducting a ${mode} interview for a ${role}.
 Difficulty level: ${difficulty}.
-This is question ${qNum} out of ${TOTAL_QUESTIONS}.
+Interview progress: Question ${qNum} out of ${TOTAL_QUESTIONS} (${stage} stage).
 ${modeGuidance}
 ${roleGuidance}
 `;
 
+  // Build organic conversation prompt - no artificial "STRATEGY" signals
   let prompt = `
 ${interviewerContext}
-Conversation so far:
+
+Interview conversation so far:
 ${historyText}
 
-Questions already asked (DO NOT REPEAT):
-${previousQuestions.length > 0 ? previousQuestions.map((q, i) => `${i + 1}. ${q}`).join("\n") : "None"}
-
-Focus for this question: ${selectedTopics[qNum] || "general interview question"}
+Topics already discussed (never repeat):
+${previousQuestions.length > 0 ? previousQuestions.map((q) => `- ${q}`).join("\n") : "None yet"}
 `;
 
-  // Add follow-up if previous answer exists
-  if (lastQuestion && lastAnswer && qNum >= 3) {
+  // Different prompt structure based on context.
+  // IMPORTANT: force topic switching cadence so interview covers breadth.
+  if (qNum === 1) {
     prompt += `
-Previous question:
-"${lastQuestion}"
 
-Candidate's answer:
-"${lastAnswer}"
-
-Ask a concise follow-up question based on the answer. Keep it specific and direct.
-${isResumeBased ? "Also anchor the follow-up to resume details (skills/projects/experience)." : ""}
+This is the opening question of the interview. Start naturally and conversationally:
+- Make the candidate feel comfortable
+- Ask something that gets them talking about their ${mode === "HR" ? "work style and motivations" : isResumeBased ? "background and relevant experience" : "technical foundation"}
+- Keep it open enough for them to show their thinking, but specific enough to guide them
 `;
-  } else {
+  } else if (shouldExploreNew) {
     prompt += `
-Ask a straightforward, specific interview question for the ${isResumeBased ? "candidate's resume profile" : "role and difficulty level"}.
-DO NOT repeat any topics from the conversation history above.
-${isResumeBased ? "Prefer questions tied to technologies, projects, impact, or decisions visible in the resume." : ""}
+
+TOPIC SWITCH REQUIRED FOR THIS QUESTION.
+Ask about a DIFFERENT area not covered yet in this interview:
+- Do NOT ask a follow-up to the last question
+- Pick a new subtopic for breadth
+- Keep the flow natural, but ensure clear topic change
+- Use the previous question list and avoid overlap/paraphrase
+`;
+  } else if (shouldGoDeeper && lastQuestion && lastAnswer) {
+    prompt += `
+
+FOLLOW-UP MODE FOR THIS QUESTION.
+Previous question: "${lastQuestion}"
+Candidate answer: "${lastAnswer}"
+
+Ask a deeper follow-up that:
+- Probes a specific part of the candidate's answer
+- Requests clarification, trade-off, edge case, or concrete example
+- Tests depth on the same topic without repeating wording
+`;
+  } else if (history.length >= 1) {
+    prompt += `
+
+The candidate has answered ${history.length} question${history.length !== 1 ? 's' : ''} so far.
+Ask the next natural question that:
+- Matches the ${stage} stage (${stage === "early" ? "foundation" : stage === "mid" ? "application" : "advanced/edge cases"})
+- Avoids repeating any topic from the list above
+- Maintains interview breadth and progression
 `;
   }
 
+  // Question generation guidelines - focus on naturalness not templates
   const resumePhrasingRules = isResumeBased
     ? `
-- Vary the opening style across questions.
-- Do NOT start with "Your resume mentions" more than once in the entire interview.
-- Prefer direct technical openings like: "How would you...", "Why did you...", "What trade-off...", "Explain...", "When would you..."
-- Reference resume details naturally without using a fixed template phrase.
+- Vary the opening style - use different question formats each time
+- Never repeat the same phrase (e.g., don't say "Your resume mentions" twice)
+- Reference specific resume details naturally without feeling formulaic
 `
     : "";
 
-  prompt += `
-Rules:
-- Ask ONE question only
-- Be direct, specific, and practical - NOT open-ended
+  const questionGuidelines = `
+CRITICAL: Generate questions that FEEL NATURAL, not templated.
+
+Format & Style:
+- ONE question only
 - Max 40 words
-- Avoid: essay-type questions, vague questions, scenario descriptions, "describe a project/scenario", "explain a recent", "tell me about"
-- Ask FACTS-based questions requiring concrete answers (e.g., "What is X?", "How does X work?", "Define X")
-- Avoid repeating questions or topics from the conversation
-- Use simple, clear language
-- Ask for definitions, explanations of concepts, or comparisons
-- Avoid repetitive sentence starters across questions
+- Conversational tone - like a real interviewer speaking
+- Avoid famous interview question phrases or clichés
+- Vary sentence starters completely: "How", "What", "Why", "Can you", "Tell me", "Do you", "When", "If"
+- NO transitions like "Okay, let's move on to...", "Building on that...", "Alright, let's talk about..."
+- NO topic labels or announcements (e.g., don't say "Let's discuss inheritance")
+- Sound like YOU are genuinely curious about their answer, not reading from a script
+
+Quality Standards:
+- Ask for concrete details, not general explanations
+- Questions should reveal DEPTH of understanding, not just surface knowledge
+- Challenge them proportionally to interview stage: early=foundational, mid=practical, late=edge cases
+- If following up on a previous answer, reference what they actually said (not a summary)
+- If asking fresh, make it feel like a natural thought progression
+- Obey mode instructions above strictly:
+  - If prompt says "TOPIC SWITCH REQUIRED", choose a new topic area and do not continue the previous one
+  - If prompt says "FOLLOW-UP MODE", stay on the same topic but deepen it
+- Across 10 questions, ensure coverage of multiple subtopics instead of staying on one thread
+
+AVOID:
+- Multiple questions in one ("What is X and why is it Y?")
+- Vague open-ended prompts  
+- "Tell me about your experience / a time when..."
+- "Describe a project / scenario"
+- Rhetorical framing
+- Repeating question topics from the list above
+- Starting with scripted transitions like "Okay, now" / "Let's move on"
 ${resumePhrasingRules}
-${role === "Software Developer" && mode === "Technical" ? "- **CRITICAL**: Question MUST be about Data Structures, Algorithms, OOP concepts, or SQL. NO other topics allowed." : ""}
 `;
+
+  // Append guidelines to final prompt
+  prompt += `\n${questionGuidelines}`;
 
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -295,7 +374,7 @@ ${role === "Software Developer" && mode === "Technical" ? "- **CRITICAL**: Quest
     for (let attempt = 0; attempt < 3; attempt++) {
       const retryInstruction = attempt === 0
         ? ""
-        : `\n\nRetry #${attempt}: The previous output repeated an earlier question. Generate a clearly different question on a different subtopic.`;
+        : `\n\nRetry #${attempt}: The previous output did not satisfy constraints. Generate one concise question that is clearly different and follows the mode instructions exactly.`;
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
@@ -314,7 +393,10 @@ ${role === "Software Developer" && mode === "Technical" ? "- **CRITICAL**: Quest
       if (!generatedQuestion) continue;
 
       question = generatedQuestion;
-      if (!isQuestionDuplicate(generatedQuestion, previousQuestions)) {
+      const duplicate = isQuestionDuplicate(generatedQuestion, previousQuestions);
+      const sameTopicInSwitchMode = shouldExploreNew && isSameTopicAsLastQuestion(generatedQuestion, lastQuestion);
+
+      if (!duplicate && !sameTopicInSwitchMode) {
         break;
       }
     }
